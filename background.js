@@ -1,75 +1,116 @@
-let currentTabId = null;
-let currentStartTime = null;
-let timeSpent = {};
+let tabInfo = {}; // Object to store information about each tab
+let timeSpent = {}; // Object to store accumulated time for each domain
+
+let IDLE_TIME_THRESHOLD = 15; // Idle threshold in seconds
+const trackWhenIdleSites = ["youtube.com", "netflix.com", "hulu.com", "disneyplus.com"];
 
 // Listen for tab activation (switching between tabs)
 chrome.tabs.onActivated.addListener(activeInfo => {
-    updateCurrentTab(activeInfo.tabId);
+    updateTabInfo(activeInfo.tabId);
 });
 
 // Listen for tab updates (e.g., page load complete)
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (tabId === currentTabId && changeInfo.status === 'complete') {
-        currentStartTime = new Date();
+    if (changeInfo.status === 'complete') {
+        updateTabInfo(tabId);
     }
 });
 
 // Listen for tab removal (closing a tab)
 chrome.tabs.onRemoved.addListener(tabId => {
-    if (tabId === currentTabId) {
-        updateCurrentTab(null);
+    if (tabInfo[tabId]) {
+        accumulateTime(tabId);
+        delete tabInfo[tabId];
     }
 });
 
 // Listen for replacing a tab (replacing an existing tab with a new one)
 chrome.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
-    if (removedTabId === currentTabId) {
-        updateCurrentTab(addedTabId);
+    if (tabInfo[removedTabId]) {
+        accumulateTime(removedTabId);
+        delete tabInfo[removedTabId];
     }
+    updateTabInfo(addedTabId);
 });
 
 // Handle messages (e.g., request to get time spent data)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "getTimeSpent") {
-        updateCurrentTab(currentTabId);
-        sendResponse(timeSpent);
+        getTimeSpentData(sendResponse);
+        return true; // Indicate asynchronous response
     }
 });
 
-function updateCurrentTab(newTabId) {
-    if (currentTabId !== null && currentStartTime !== null) {
-        // Calculate time spent on the current tab
-        const timeSpentOnSite = (new Date() - currentStartTime) / 1000;
+// Set up a timer to periodically check for idle tabs and accumulate time
+setInterval(() => {
+    const now = Date.now();
+    chrome.tabs.query({ active: true }, tabs => {
+        tabs.forEach(tab => {
+            if (tabInfo[tab.id]) {
+                accumulateTime(tab);
+            } else {
+                // If no info about the tab, initialize it
+                tabInfo[tab.id] = { timeSpent: 0, url: tab.url };
+            }
+        });
+    });
+}, 1000);
 
-        // Get the URL of the current tab and update timeSpent
-        chrome.tabs.get(currentTabId, tab => {
-            if (!chrome.runtime.lastError && tab) {
-                const url = new URL(tab.url);
-                const domain = url.hostname;
+// Helper function to get domain from URL
+function getDomain(url) {
+    if (url) {
+        return (new URL(url)).hostname.replace('www.', '');
+    } else {
+        return null;
+    }
+}
 
-                // Update time spent on the domain
+// Helper function to update tab information
+function updateTabInfo(tabId) {
+    chrome.tabs.get(tabId, tab => {
+        if (tab) {
+            if (tabInfo[tabId]) {
+                // Update the URL in case it changed
+                tabInfo[tabId].url = tab.url;
+            } else {
+                tabInfo[tabId] = { timeSpent: 0, url: tab.url };
+            }
+        }
+    });
+}
+
+// Helper function to accumulate time spent on a domain
+function accumulateTime(tab) {
+    const domain = getDomain(tab.url);
+    let idle = (((Date.now() - tab.lastAccessed) / 1000) > IDLE_TIME_THRESHOLD);
+
+    // Check if it's idle or not a tracked when idle site
+    if (!idle || trackWhenIdleSites.includes(domain)) {
+        if (tabInfo[tab.id]) {
+            if (domain) {
                 if (!timeSpent[domain]) {
                     timeSpent[domain] = 0;
                 }
-                timeSpent[domain] += timeSpentOnSite;
-
-                // Save time spent data to local storage
-                chrome.storage.local.set({ timeSpent: timeSpent }, () => {
-                    if (chrome.runtime.lastError) {
-                        console.error("Error saving timeSpent to local storage:", chrome.runtime.lastError.message);
-                    }
-                });
-            } else {
-                console.error("Error getting tab info:", chrome.runtime.lastError ? chrome.runtime.lastError.message : "Tab not found");
+                timeSpent[domain]++;
             }
-
-            // Set the new current tab and reset the start time
-            currentTabId = newTabId;
-            currentStartTime = newTabId ? new Date() : null;
-        });
-    } else {
-        // Set the new current tab and reset the start time
-        currentTabId = newTabId;
-        currentStartTime = newTabId ? new Date() : null;
+        }
     }
+}
+
+// Function to get accumulated time spent data
+function getTimeSpentData(callback) {
+    // Clone the timeSpent object to send as a response
+    const timeSpentCopy = { ...timeSpent };
+
+    // Include active tab times in the response
+    for (const tabId in tabInfo) {
+        if (tabInfo.hasOwnProperty(tabId)) {
+            const domain = getDomain(tabInfo[tabId].url);
+            if (!timeSpentCopy[domain]) {
+                timeSpentCopy[domain] = 0;
+            }
+            timeSpentCopy[domain] += tabInfo[tabId].timeSpent;
+        }
+    }
+    callback(timeSpentCopy);
 }
