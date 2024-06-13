@@ -6,7 +6,7 @@ const trackWhenIdleSites = ["youtube.com", "netflix.com", "hulu.com", "disneyplu
 
 let blockThresholds = {
     "youtube.com": 3600,    // 1 hour for YouTube
-    "old.reddit.com": 10   // 10 minutes for Reddit
+    "old.reddit.com": 900   // 10 minutes for Reddit
 };
 
 
@@ -135,7 +135,6 @@ function accumulateTime(tab) {
     }
 }
 
-// Function to get accumulated time spent data
 function getTimeSpentData(callback) {
     // Clone the timeSpent object to send as a response
     const timeSpentCopy = { ...timeSpent };
@@ -150,5 +149,15 @@ function getTimeSpentData(callback) {
             timeSpentCopy[domain] += tabInfo[tabId].timeSpent;
         }
     }
-    callback(timeSpentCopy);
+
+    // Convert timeSpentCopy to an array of key-value pairs & sort by time spent in descending order
+    const sortedTimeSpentArray = Object.entries(timeSpentCopy).sort((a, b) => b[1] - a[1]); // 
+
+    // Create a new object from the sorted array
+    const sortedTimeSpent = {};
+    sortedTimeSpentArray.forEach(([domain, timeSpent]) => {
+        sortedTimeSpent[domain] = timeSpent;
+    });
+
+    callback(sortedTimeSpent);
 }
