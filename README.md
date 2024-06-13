@@ -32,7 +32,7 @@ Contributions are welcome! If you have any suggestions, enhancements, or bug fix
 - [ ] Provide options to exclude certain websites from tracking.
 - [ ] Export Data via CSV
 - [ ] Notify users when they've spent a certain amount of time on a website.
-- [ ] Block websites after a certain amount of time.
+- [x] Block websites after a certain amount of time.
 - [ ] Sync Across Devices
 - [ ] UI/UX Enhancements
 - [ ] Firefox Support

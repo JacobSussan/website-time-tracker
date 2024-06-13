@@ -6,7 +6,7 @@ const trackWhenIdleSites = ["youtube.com", "netflix.com", "hulu.com", "disneyplu
 
 let blockThresholds = {
     "youtube.com": 3600,    // 1 hour for YouTube
-    "old.reddit.com": 600   // 10 minutes for Reddit
+    "old.reddit.com": 10   // 10 minutes for Reddit
 };
 
 
@@ -126,7 +126,7 @@ function accumulateTime(tab) {
 
                 // Check if accumulated time exceeds the block threshold
                 if (timeSpent[domain] > blockThresholds[domain]) {
-                    chrome.tabs.remove(tab.id);
+                    chrome.tabs.sendMessage(tab.id, { action: "blockSite" });
                     console.log(`Site ${domain} blocked due to exceeding time threshold.`);
                 }
 
