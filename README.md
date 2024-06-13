@@ -7,19 +7,6 @@ Track the time spent on each website using this simple Chrome extension.
 - Automatically tracks time spent on each open tab.
 - Provides a popup interface to view tracked times.
 
-## TODO
-- [ ] Detailed Reports:
-    - [ ] Generate daily, weekly, or monthly reports showing time spent on each website.
-    - [ ] Display charts or graphs for visual representation of data.
-- [ ] Provide options to exclude certain websites from tracking.
-- [ ] Export Data via CSV
-- [ ] Notify users when they've spent a certain amount of time on a website.
-- [ ] Block websites after a certain amount of time.
-- [ ] Sync Across Devices
-- [ ] UI/UX Enhancements
-- [ ] Firefox Support
-
-
 ## Installation
 
 1. Clone or download the repository.
@@ -36,3 +23,17 @@ Track the time spent on each website using this simple Chrome extension.
 ## Contributing
 
 Contributions are welcome! If you have any suggestions, enhancements, or bug fixes, feel free to open an issue or create a pull request.
+
+
+## TODO
+- [ ] Detailed Reports:
+    - [ ] Generate daily, weekly, or monthly reports showing time spent on each website.
+    - [ ] Display charts or graphs for visual representation of data.
+- [ ] Provide options to exclude certain websites from tracking.
+- [ ] Export Data via CSV
+- [ ] Notify users when they've spent a certain amount of time on a website.
+- [ ] Block websites after a certain amount of time.
+- [ ] Sync Across Devices
+- [ ] UI/UX Enhancements
+- [ ] Firefox Support
+
