@@ -1,0 +1,14 @@
+body {
+    font-family: Arial, sans-serif;
+    width: 200px;
+    padding: 10px;
+}
+  
+h1 {
+    font-size: 16px;
+    text-align: center;
+}
+  
+#timeList {
+    margin-top: 10px;
+}
