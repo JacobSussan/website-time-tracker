@@ -4,6 +4,12 @@ let timeSpent = {}; // Object to store accumulated time for each domain
 let IDLE_TIME_THRESHOLD = 15; // Idle threshold in seconds
 const trackWhenIdleSites = ["youtube.com", "netflix.com", "hulu.com", "disneyplus.com"];
 
+let blockThresholds = {
+    "youtube.com": 3600,    // 1 hour for YouTube
+    "old.reddit.com": 600   // 10 minutes for Reddit
+};
+
+
 // Listen for tab activation (switching between tabs)
 chrome.tabs.onActivated.addListener(activeInfo => {
     updateTabInfo(activeInfo.tabId);
@@ -59,10 +65,35 @@ setInterval(() => {
 // Helper function to get domain from URL
 function getDomain(url) {
     if (url) {
-        return (new URL(url)).hostname.replace('www.', '');
-    } else {
-        return null;
+        const hostname = (new URL(url)).hostname.replace('www.', '');
+        // Check against blockThresholds for wildcard matches
+        for (const domainPattern in blockThresholds) {
+            if (domainMatches(hostname, domainPattern)) {
+                return domainPattern;
+            }
+        }
+        return hostname;
     }
+    return null;
+}
+
+// Helper function to check if a hostname matches a wildcard domain pattern
+function domainMatches(hostname, pattern) {
+    // Split hostname and pattern into parts
+    const hostnameParts = hostname.split('.').reverse();
+    const patternParts = pattern.split('.').reverse();
+    
+    // Check if each part matches
+    for (let i = 0; i < patternParts.length; i++) {
+        if (patternParts[i] === '*') {
+            // Wildcard matches any subdomain, so continue
+            continue;
+        }
+        if (hostnameParts[i] !== patternParts[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Helper function to update tab information
@@ -92,6 +123,13 @@ function accumulateTime(tab) {
                     timeSpent[domain] = 0;
                 }
                 timeSpent[domain]++;
+
+                // Check if accumulated time exceeds the block threshold
+                if (timeSpent[domain] > blockThresholds[domain]) {
+                    chrome.tabs.remove(tab.id);
+                    console.log(`Site ${domain} blocked due to exceeding time threshold.`);
+                }
+
             }
         }
     }
